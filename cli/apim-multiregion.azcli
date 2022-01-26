@@ -1,0 +1,285 @@
+#!/bin/bash
+
+#VARIABLES
+RG=Demo-Apim-Multiregion
+PRIMARY_REGION=eastus
+VNET=apim-multiregion-vnet
+SUBNET=primary
+APIM=apim-multiregion
+APIM_PUBLISHER=fabricio.sanchez@americasuniversity.net
+APIM_PUBLISHER_NAME=AU
+
+#LOGS USER INTO AZURE TENANT (VIA BROWSER LOGIN)
+az login
+
+#RETRIEVES THE DEFAULT SUBSCRIPTION ID
+SUBSCRIPTION_ID=$(az account list -o tsv --query "[?name == 'Your subscription name'].id")
+
+#SETS UP THE DEFAULT SUBSCRIPTION TO WORK WITH
+az account set -s $SUBSCRITION_ID
+
+#CREATES A NEW RESOURCE GROUP
+az group create \
+    -n $RG \
+    -l $PRIMARY_REGION
+
+#CREATES A NEW VIRTUAL NETWORK WITH A SUBNET
+az network vnet create \
+    -g $RG \
+    -n $VNET \
+    --address-prefixes 10.0.0.0/16 \
+    --subnet-name $SUBNET \
+    --subnet-prefix 10.0.0.0/24
+
+#CREATES A NETWORK SECURITY GROUP
+az network nsg create \
+    -n ${VNET}-nsg \
+    -g $RG \
+    -l $PRIMARY_REGION
+
+#ADDS UP APIM'S REQUIRED RULES AT THE NSG LEVEL
+az network nsg rule create \
+    -n all_to_80 \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 100 \
+    --access Allow \
+    --direction Inbound \
+    --source-address-prefixes * \
+    --destination-port-ranges 80 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_443 \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 110 \
+    --access Allow \
+    --direction Inbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 443 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_3443 \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 120 \
+    --access Allow \
+    --direction Inbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 3443 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_443_out \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 100 \
+    --access Allow \
+    --direction Outbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 443 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_1433_out \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 110 \
+    --access Allow \
+    --direction Outbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 1433 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_5671_out \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 120 \
+    --access Allow \
+    --direction Outbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 5671 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_5672_out \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 130 \
+    --access Allow \
+    --direction Outbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 5672 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_445_out \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 140 \
+    --access Allow \
+    --direction Outbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 445 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_1200_out \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 150 \
+    --access Allow \
+    --direction Outbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 1200 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_1886_out \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 160 \
+    --access Allow \
+    --direction Outbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 1886 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_25_out \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 170 \
+    --access Allow \
+    --direction Outbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 25 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_587_out \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 180 \
+    --access Allow \
+    --direction Outbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 587 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_25028_out \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 190 \
+    --access Allow \
+    --direction Outbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 25028 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_6381_6383 \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 130 \
+    --access Allow \
+    --direction Inbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 6381-6383 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_6381_6383_out \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 200 \
+    --access Allow \
+    --direction Outbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 6381-6383 \
+    --protocol Tcp
+
+az network nsg rule create \
+    -n all_to_4290 \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 140 \
+    --access Allow \
+    --direction Inbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 4290 \
+    --protocol Udp
+
+az network nsg rule create \
+    -n all_to_4290_out \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 210 \
+    --access Allow \
+    --direction Outbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 4290 \
+    --protocol Udp
+
+az network nsg rule create \
+    -n all_to_6390 \
+    -g $RG \
+    --nsg-name ${VNET}-nsg \
+    --priority 150 \
+    --access Allow \
+    --direction Inbound \
+    --source-address-prefixes '*' \
+    --destination-port-ranges 6390 \
+    --protocol Tcp
+
+#ATTACHES THE NSG TO THE SUBNET
+az network vnet subnet update \
+    -g $RG \
+    -n $SUBNET \
+    --vnet-name $VNET \
+    --network-security-group ${VNET}-nsg
+
+#CREATES A NEW PUBLIC IP
+az network public-ip create \
+    -g $RG \
+    -n ${APIM}-pip \
+    -l $PRIMARY_REGION \
+    --sku Standard \
+    --dns-name ${APIM}-pip \
+    --allocation-method Static
+
+#CREATES A NEW (EXTERNAL) APIM
+az apim create \
+    --name $APIM \
+    --resource-group $RG \
+    --location $PRIMARY_REGION \
+    --sku-name Premium \
+    --publisher-email $APIM_PUBLISHER \
+    --publisher-name $APIM_PUBLISHER_NAME \
+    --virtual-network External
+
+#CONNECTS APIM TO THE EXISTING VNET/SUBNET
+APIM_RESOURCE_ID=$( \
+    az apim show \
+        -n $APIM \
+        -g $RG \
+        --query 'id' \
+        -o tsv \
+)
+
+SUBNET_RESOURCE_ID=$( \
+    az network vnet subnet show \
+        -n $SUBNET \
+        -g $RG \
+        --vnet-name $VNET \
+        --query 'id' \
+        -o tsv \
+)
+
+az resource update \
+    --ids $APIM_RESOURCE_ID \
+    --set properties.virtualNetworkConfiguration=$SUBNET_RESOURCE_ID properties.virtualNetworkType=External
