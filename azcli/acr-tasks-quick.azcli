@@ -11,8 +11,12 @@ az login
 # SELECTS THE DEFAULT SUBSCRIPTION
 az account set -s "Your Subscription Id"
 
+# IF THERE IS NO ACR ALREADY CREATED, EXECUTE THIS STEP.
+# IF YOU ALREADY HAVE AN ACR YOU'D LIKE TO USE, SKIP THIS STEP.
+az acr create -n $ACR_NAME -g $RG --sku Standard --admin-enabled true
+
 # BUILDS A NEW IMAGE BY LEVERAGING ACR TASKS
-az acr build --registry $ACR_NAME --image hello-acr-tasks-quick:v1 .
+az acr build --registry $ACR_NAME --image your-image-name-in-acr:version .
 
 # SHOWS NEW REPOSITORY SITTING INTO ACR
 az acr repository list -n $ACR_NAME -o table
@@ -39,20 +43,25 @@ az keyvault secret set \
 # SHOW AKV SECRETS LIST
 az keyvault secret list --vault-name $AKV_NAME -o table
 
+
+############################################################################
+# OPTIONAL STEP                                                            #
+############################################################################
+
 # DEPLOY THE IMAGE INTO AZURE CONTAINER INSTANCES
-# New resource group exists just to separate ACI from CoreResources RG
+# For the sake of organization, it does create a separate RG for ACI. Also optional.
 az group create \
     -n $RG_ACI \
     -l $LOCATION
 
 az container create \
     -g $RG_ACI \
-    -n acr-tasks-quick \
-    --image $ACR_NAME.azurecr.io/hello-acr-tasks-quick:v1 \
+    -n your-aci-name \
+    --image $ACR_NAME.azurecr.io/your-image-name-in-acr:version \
     --registry-login-server $ACR_NAME.azurecr.io \
     --registry-username $(az keyvault secret show --vault-name $AKV_NAME --name $ACR_NAME-pull-usr --query value -o tsv) \
     --registry-password $(az keyvault secret show --vault-name $AKV_NAME --name $ACR_NAME-pull-pwd --query value -o tsv) \
-    --dns-name-label acr-tasks-quick \
+    --dns-name-label your-aci-fqdn \
     --query "{FQDN:ipAddress.fqdn}" \
     --output table
 
