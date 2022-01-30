@@ -70,4 +70,4 @@ az container create \
     --output table
 
 # ATTACH WATCHER TO SEE STARTUP PROCESS
-az container attach --resource-group $RG_ACI --name acr-tasks-quick
+az container attach --resource-group $RG_ACI --name your-aci-name
